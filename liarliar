@@ -1,0 +1,128 @@
+#!/usr/bin/perl -w 
+
+use strict;
+use warnings;
+
+sub isAnEdge;
+sub dequeue;
+sub enqueue;
+sub isVisited;
+sub BFS; #Breadth First Search
+sub init;
+
+my $index        = 0;
+my $adc_matrix   = {}; #Adjacency Matrix
+my @bfs_queue    = ();
+my $vertex_color = {};
+my $parity_no    = {};
+my $parity       = 0;
+my @no_of_people = ();
+my ($skip_first_line, $accuser, $accused, $no_accused, $setA, $setB) = 0;
+
+open(FD, $ARGV[0]);
+
+while (<FD>) {
+    if (!$skip_first_line) {
+        $skip_first_line = 1;
+        next;
+    }
+     
+    ($accuser, $no_accused) = split (/\s+/, $_);
+    
+    if ($no_accused eq "") {
+        $adc_matrix->{$no_of_people[$#no_of_people]}{$accuser} = 1;
+        $adc_matrix->{$accuser}{$no_of_people[$#no_of_people]} = 1
+    } else {
+        push @no_of_people, $accuser;
+        $vertex_color->{$accuser} = 0;
+    }
+}
+
+init();
+
+sub init {
+    enqueue($no_of_people[$#no_of_people]);
+    $setA++;
+    BFS();
+
+    $setB = scalar @no_of_people - $setA;
+
+    if ($setA > $setB) {
+        print "$setA $setB\n";
+    } else {
+        print "$setB $setA\n";
+    }
+
+}
+
+sub isAnEdge {
+    my ($accuser, $accused) = @_;
+
+    if (exists $adc_matrix->{$accuser}{$accused}) {
+        return 1;
+    }
+    return 0;
+}
+
+sub dqueue {
+    return (shift @bfs_queue);
+}
+
+sub enqueue {
+    my $item = shift @_;
+    push @bfs_queue, $item;
+    $vertex_color->{$item} = 2; #enqueue
+}
+
+sub isVisited {
+    my $vertex = shift @_;
+
+    if ($vertex_color->{$vertex} == 1) {
+        return 1;
+    }
+    return 0;
+}
+
+sub is_queue_empty {
+    if (scalar @bfs_queue) {
+        return 1;
+    }
+    return 0;
+}
+
+sub is_enqueued {
+    my $item = shift;
+
+    if ($vertex_color->{$item} == 2) {
+        return 1;
+    }
+
+    return 0;
+}
+
+sub BFS {
+    my ($u, $v); #Edge(u,v)
+
+    while (is_queue_empty()) {
+        $u = dqueue();
+
+        $vertex_color->{$u} = 1;
+
+        foreach $v (keys %{$adc_matrix->{$u}}) {
+            if (isAnEdge($u, $v)) {
+                if (!isVisited($v) && !is_enqueued($v)) {
+                    if (!$parity_no->{$u}) {
+                        $parity_no->{$v} =  1;
+                    } else {
+                        $parity_no->{$v} = $parity_no->{$u} - 1;
+                        $setA++; # Independent set
+                    }
+                    $vertex_color->{$v} = 2; #mark the node as enqueued
+                    enqueue($v);
+                }
+            }
+        }
+    }
+}
+
+
